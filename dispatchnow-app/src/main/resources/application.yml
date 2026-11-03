@@ -1,0 +1,50 @@
+spring:
+  application:
+    name: dispatchnow
+  profiles:
+    default: dev
+  main:
+    banner-mode: "off"
+  datasource:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 0
+      connection-timeout: 2000
+      validation-timeout: 1000
+      initialization-fail-timeout: -1
+  data:
+    redis:
+      connect-timeout: 2s
+      timeout: 2s
+      repositories:
+        enabled: false
+      lettuce:
+        shutdown-timeout: 200ms
+  rabbitmq:
+    connection-timeout: 2s
+    channel-rpc-timeout: 3s
+
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,redis

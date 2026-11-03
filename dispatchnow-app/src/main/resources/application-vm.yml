@@ -1,0 +1,36 @@
+# Windows 后端连接已有虚拟机服务。必须在项目根目录提供自己的 .env。
+# 不使用本机默认账号，也不在此文件中写入个人密码。
+spring:
+  config:
+    import: file:./.env[.properties]
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:project01}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&sslMode=DISABLED&allowPublicKeyRetrieval=true&connectTimeout=2000&socketTimeout=3000
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      # Redis 未配置 requirepass 时，空值表示不执行 AUTH。
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST}
+
+management:
+  endpoint:
+    health:
+      group:
+        readiness:
+          show-components: always
+        infrastructure:
+          include: db,redis,rabbit
+          show-components: always
+
+logging:
+  level:
+    com.dispatchnow: DEBUG

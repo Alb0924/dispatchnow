@@ -1,0 +1,72 @@
+name: dispatchnow-local
+
+services:
+  mysql:
+    image: mysql:8.4.8@sha256:2952e3be7807f06fc18de50b3ea1a632d5c70d63482ff7d7376fe3aa8999babf
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-project01}
+      MYSQL_USER: ${MYSQL_USER:-dispatchnow}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dispatchnow_local}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-dispatchnow_root_local}
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'MYSQL_PWD="$${MYSQL_PASSWORD}" mysql --protocol=TCP --host=127.0.0.1 --port=3306 --user="$${MYSQL_USER}" --database="$${MYSQL_DATABASE}" --execute="SELECT 1" --batch --skip-column-names | grep -qx 1'
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  redis:
+    image: redis:8.2.4-alpine@sha256:a308ca111032fa8f306a2dc7be7ba5deb8b777ed5d258c733cddba48a1fd7904
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-dispatchnow_redis_local}
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    command:
+      - sh
+      - -c
+      - 'exec redis-server --appendonly yes --requirepass "$${REDIS_PASSWORD}"'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'REDISCLI_AUTH="$${REDIS_PASSWORD}" redis-cli --host 127.0.0.1 ping | grep -qx PONG'
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  rabbitmq:
+    image: rabbitmq:4.2.5-management@sha256:e43ca03df740d48770641b56ce1a26913c74a31e47c1ed36a58e8d91c10731b9
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-dispatchnow}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-dispatchnow_rabbit_local}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VIRTUAL_HOST:-dispatchnow}
+    ports:
+      - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672"
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - rabbitmq-diagnostics -q check_running && rabbitmq-diagnostics -q check_port_connectivity
+      interval: 15s
+      timeout: 15s
+      retries: 8
+      start_period: 40s
+
+volumes:
+  mysql-data:
+  redis-data:
+  rabbitmq-data:
